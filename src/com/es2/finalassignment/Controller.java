@@ -54,18 +54,26 @@ public class Controller {
 	@Path("/auth")
 	@Produces("application/json")
 	public Response clientLogin() {
-		return Response.status(200).entity("Ola").build();
+		int result = execSQLLogin(getConnection(), req.getHeader("username"), req.getHeader("password"));
+		if (result==1){
+			JSONObject jj = new JSONObject();
+			jj.append("success", true);
+			jj.append("token", createToken(new JSONObject().append("username", req.getHeader("username")).toString() ) );
+			return Response.status(200).entity(jj.toString()).build();	
+		}else {
+			return Response.status(401).entity(new JSONObject().append("success", false)).build();
+		}
+		
 	}
 	
 	@GET
-	@Path("/{idclient}")
+	@Path("/client/{idclient}")
 	@Produces("application/json")
     public Response clientDetails(@PathParam("idclient") Integer idClient) {
 		//return Response.status(200).entity("ok 🍬").build();
-		JSONObject j = new JSONObject().append("name", "aaa");
-		validateToken(createToken( j.toString()));
+		
 		String key = req.getHeader("Authorization");
-		if(key==null || !key.split(" ")[1].equals("123456789")) return Response.status(401).entity("Bad Token").build();
+		if(key==null || validateToken(key.split(" ")[1])==null) return Response.status(401).entity( new JSONObject().append("success", false).toString()).build();
 			
 		return getClientDetails(req, idClient);
     }
@@ -102,56 +110,58 @@ public class Controller {
 		} catch (JoseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			System.out.println("Invalid Token");
+			return null;
 		}
-		 return null;
 		 
 	}
 	//Connection to DB
-	public Connection getConnection() throws SQLException {
+	public Connection getConnection()  {
 		Connection conn = null;
 		Properties connectionProps = new Properties();
 		connectionProps.put("user", this.userName);
 		connectionProps.put("password", this.password);
 
 		
-		conn = DriverManager.getConnection("jdbc:mysql://"
-				+ this.serverName + ":" + this.portNumber + "/" + this.dbName,
-				connectionProps);
-
-		return conn;
-	}	
-
-	private void execSQL(Connection conn,String query) {
-		Statement s = null;
-		ResultSet rs = null;
 		try {
-			s = conn.createStatement();
-
-		s.executeQuery(query);
-		rs = s.getResultSet();
-		
-		if (rs.next())
-		{
-			//outputToClient.writeObject();
-			
-			double overall_CA =  rs.getInt("CA_Mark")*0.30;
-			double overall_Exam = rs.getInt("Exam_Mark")*0.70;
-			double grade = overall_CA + overall_Exam;
-			
-			String info = "StudentID: " + rs.getString("STUD_ID") + "\n First Name: " + rs.getString("FNAME") + "\n Last Name: " + rs.getString("SNAME") + "\n"
-					+ "Module: " + rs.getString("ModuleName") +"\n CA MARK: " + rs.getInt("CA_Mark") + "(" + overall_CA +")\n "
-							+ "Exam Mark: " + rs.getInt("Exam_Mark") + "(" +  overall_Exam + ") \n Overall Grade: " + grade ;
-			
-			System.out.println("Welcome " + rs.getString("FNAME") + " " + rs.getString("SNAME") + " you are now connected to the Server \n"+ info);
-		}
-		else
-		{
-			System.out.println("Sorry. You are not a registered student. Bye \\n");
-		}
+			conn = DriverManager.getConnection("jdbc:mysql://"
+					+ this.serverName + ":" + this.portNumber + "/" + this.dbName,
+					connectionProps);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+
+		return conn;
+	}	
+
+	private int execSQLLogin(Connection conn,String username,String password) {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = conn.createStatement();
+			String aaa = new String("SELECT EMAIL, PASSWORD FROM ei2_201718.UTILIZADORES_BEEP where EMAIL = '"+username+"'");
+			System.out.println(aaa);
+			s.executeQuery(aaa);
+			rs = s.getResultSet();
+			
+			if (rs.next())
+			{
+				if(rs.getString("PASSWORD").equals(password)) {
+					System.out.println("Welcome " + rs.getString("EMAIL") + " " + rs.getString("PASSWORD"));	
+					return 1;
+				}
+			}
+			else
+			{
+				System.out.println("Sorry. You are not a registered account. Bye");
+				return 0;
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return 0;
 	}
 	private Response getClientDetails(HttpServletRequest req, Integer idClient) {
 
@@ -160,6 +170,7 @@ public class Controller {
 				
 		switch(idClient) {
 			case 1 : 
+				
 				clients.put("id", idClient);
 				clients.put("name", "José das Couves");
 				clients.put("address", "Viseu");
@@ -177,7 +188,7 @@ public class Controller {
 			default:
 				return Response.status(404).entity("Not found").build();
 		}
-				
+		clients.put("success", true);
 		return Response.status(200).entity(clients.toString()).build();
 	}
 }
