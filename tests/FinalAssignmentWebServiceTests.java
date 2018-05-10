@@ -51,20 +51,23 @@ class FinalAssignmentWebServiceTests {
 		HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
 		con.setRequestMethod("GET");
-		
 		con.setRequestProperty("Authorization", "Bearer 123456789");
 		con.setRequestProperty("Accept", "application/json");
-		BufferedReader in = new BufferedReader(
-				  new InputStreamReader(con.getInputStream()));
-		String inputLine;
-		StringBuffer content = new StringBuffer();
-		while ((inputLine = in.readLine()) != null) {
-		    content.append(inputLine);
+		
+		if(200 == con.getResponseCode()) {
+			BufferedReader in = new BufferedReader(
+					  new InputStreamReader(con.getInputStream()));
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			System.out.println(content);
+			in.close();
 		}
-		in.close();
 		con.disconnect();
 		assertEquals("application/json", con.getHeaderField("Content-Type"));
-			//System.out.println(content);
+			
 	}
 
 }
