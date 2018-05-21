@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import com.es2.finalassignment.Application;
 
 class FinalAssignmentWebServiceTests {
-
 	private static Thread t;
 	@BeforeAll
 	static void setUpBeforeClass() throws Exception {
@@ -46,14 +45,19 @@ class FinalAssignmentWebServiceTests {
 	}
 
 	@Test
+	void testLoginSuccess() throws IOException {
+		
+	}
+	
+	@Test
 	void testContentType() throws IOException {
-		URL url  = new URL("http://127.0.0.1:8080/client/1");
+		URL url  = new URL("http://127.0.0.1:8080/app/client/1");
 		HttpURLConnection con = (HttpURLConnection) url.openConnection();
 
 		con.setRequestMethod("GET");
-		con.setRequestProperty("Authorization", "Bearer 123456789");
+		con.setRequestProperty("Authorization", "Bearer eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0.N9vG59RE2Nw2Nr-86kBikB3DrWnZ2pSOqh1fWsl0uFm4_2oJCQd16Q.dylJ8z8uJH-eJ0sglUpozA.sUGsDk4bRRin9EG6k3H4veK2uOt7Dn_4A5b3-68GBAo.kJEVUUNG8e6LvBuWshsZoQ");
 		con.setRequestProperty("Accept", "application/json");
-		
+		System.out.println(con.getResponseCode());
 		if(200 == con.getResponseCode()) {
 			BufferedReader in = new BufferedReader(
 					  new InputStreamReader(con.getInputStream()));
