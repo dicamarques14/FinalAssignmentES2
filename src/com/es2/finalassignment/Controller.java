@@ -9,12 +9,16 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 
 import java.awt.RenderingHints.Key;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -40,7 +44,8 @@ public class Controller {
 	private final String password = "password";
 
 	/** The name of the computer running MySQL */
-	private final String serverName = "193.137.7.39";
+	//private final String serverName = "193.137.7.39";
+	private final String serverName = "10.0.3.201";
 
 	/** The port of the MySQL server (default is 3306) */
 	private final int portNumber = 3306;
@@ -54,14 +59,24 @@ public class Controller {
 	@Path("/auth")
 	@Produces("application/json")
 	public Response clientLogin() {
-		int result = execSQLLogin(getConnection(), req.getHeader("username"), req.getHeader("password"));
+		JSONObject jsobj = null;
+		try {
+			BufferedReader kk = new BufferedReader(new InputStreamReader(req.getInputStream()));
+			jsobj = new JSONObject(kk.lines().collect(Collectors.joining()));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		int result = execSQLLogin(getConnection(), jsobj.getString("username"), jsobj.getString("password"));
 		if (result==1){
 			JSONObject jj = new JSONObject();
-			jj.append("success", true);
-			jj.append("token", createToken(new JSONObject().append("username", req.getHeader("username")).toString() ) );
+			jj.put("success", true);
+			jj.put("token", createToken(new JSONObject().put("username", req.getHeader("username")).toString() ) );
 			return Response.status(200).entity(jj.toString()).build();	
 		}else {
-			return Response.status(401).entity(new JSONObject().append("success", false)).build();
+			JSONObject jj = new JSONObject();
+			jj.put("success", false);
+			return Response.status(401).entity(jj.toString()).build();
 		}
 		
 	}
@@ -72,8 +87,9 @@ public class Controller {
     public Response clientDetails(@PathParam("idclient") Integer idClient) {
 		//return Response.status(200).entity("ok 🍬").build();
 		
-		String key = req.getHeader("Authorization");
-		if(key==null || validateToken(key.split(" ")[1])==null) return Response.status(401).entity( new JSONObject().append("success", false).toString()).build();
+		String keyzinho = req.getHeader("Authorization");
+		if(keyzinho==null || validateToken(keyzinho.split(" ")[1])==null)
+			return Response.status(401).entity( new JSONObject().append("success", false).toString()).build();
 			
 		return getClientDetails(req, idClient);
     }
@@ -109,7 +125,7 @@ public class Controller {
 			return jwe.getPayload();
 		} catch (JoseException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
 			System.out.println("Invalid Token");
 			return null;
 		}
@@ -141,7 +157,7 @@ public class Controller {
 		try {
 			s = conn.createStatement();
 			String aaa = new String("SELECT EMAIL, PASSWORD FROM ei2_201718.UTILIZADORES_BEEP where EMAIL = '"+username+"'");
-			System.out.println(aaa);
+			//System.out.println(aaa);
 			s.executeQuery(aaa);
 			rs = s.getResultSet();
 			
