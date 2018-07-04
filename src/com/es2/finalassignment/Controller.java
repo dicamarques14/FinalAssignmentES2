@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -44,8 +45,8 @@ public class Controller {
 	private final String password = "password";
 
 	/** The name of the computer running MySQL */
-	//private final String serverName = "193.137.7.39";
-	private final String serverName = "10.0.3.201";
+	private final String serverName = "193.137.7.39";
+	//private final String serverName = "10.0.3.201";
 
 	/** The port of the MySQL server (default is 3306) */
 	private final int portNumber = 3306;
@@ -61,12 +62,19 @@ public class Controller {
 	public Response clientLogin() {
 		JSONObject jsobj = null;
 		try {
+			System.out.println(req.getInputStream());
 			BufferedReader kk = new BufferedReader(new InputStreamReader(req.getInputStream()));
+			
 			jsobj = new JSONObject(kk.lines().collect(Collectors.joining()));
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		
+		System.out.println(insertmebitch(getConnection(),1,1,1,2,3,6,"s","a","a"));
+		
 		int result = execSQLLogin(getConnection(), jsobj.getString("username"), jsobj.getString("password"));
 		if (result==1){
 			JSONObject jj = new JSONObject();
@@ -80,12 +88,15 @@ public class Controller {
 		}
 		
 	}
-	
+
 	@GET
 	@Path("/client/{idclient}")
 	@Produces("application/json")
     public Response clientDetails(@PathParam("idclient") Integer idClient) {
 		//return Response.status(200).entity("ok 🍬").build();
+		
+		System.out.println(req.getRemoteAddr()); 
+		System.out.println(req.getLocalAddr()); 
 		
 		String keyzinho = req.getHeader("Authorization");
 		if(keyzinho==null || validateToken(keyzinho.split(" ")[1])==null)
@@ -156,7 +167,7 @@ public class Controller {
 		ResultSet rs = null;
 		try {
 			s = conn.createStatement();
-			String aaa = new String("SELECT EMAIL, PASSWORD FROM ei2_201718.UTILIZADORES_BEEP where EMAIL = '"+username+"'");
+			String aaa = new String("SELECT ID_UTILIZADOR, EMAIL, PASSWORD FROM ei2_201718.UTILIZADORES_BEEP where EMAIL = '"+username+"'");
 			//System.out.println(aaa);
 			s.executeQuery(aaa);
 			rs = s.getResultSet();
@@ -165,6 +176,7 @@ public class Controller {
 			{
 				if(rs.getString("PASSWORD").equals(password)) {
 					System.out.println("Welcome " + rs.getString("EMAIL") + " " + rs.getString("PASSWORD"));	
+					//LogSuccessfulLogin(rs.getInt("ID_UTILIZADOR") ,rs.getString("EMAIL"), )
 					return 1;
 				}
 			}
@@ -179,6 +191,110 @@ public class Controller {
 		}
 		return 0;
 	}
+	
+	//retorna o id do info inserido, else 0
+	private long insert_new_INFO(Connection conn,
+			Long ID_UTENTE,
+			Integer DIABETES,
+			Integer HIPERTENSAO,
+			Integer INSUFICIENCIA,
+			Integer CORONARIA,
+			Integer VALVULA,
+			String ALERGIAS,
+			String INFO,
+			String TERAPEUTICA
+			) {
+		String SQL_INSERT = "Insert into INFO_BEEP(ID_UTENTE,DIABETES,HIPERTENSAO,INSUFICIENCIA,CORONARIA,VALVULA,ALERGIAS,INFO,TERAPEUTICA) VALUES (?,?,?,?,?,?,?,?,?)";
+		Long ID_insert_INFO = (long) 0;
+		try { 
+		        PreparedStatement statement = conn.prepareStatement(SQL_INSERT,Statement.RETURN_GENERATED_KEYS);
+		        statement.setLong(1, ID_UTENTE);
+		        statement.setInt(2, DIABETES);
+		        statement.setInt(3, HIPERTENSAO);
+		        statement.setInt(4, INSUFICIENCIA);
+		        statement.setInt(5, CORONARIA);
+		        statement.setInt(6, VALVULA);
+		        statement.setString(7, ALERGIAS);
+		        statement.setString(8, INFO);
+		        statement.setString(9, TERAPEUTICA);
+		        
+		        int affectedRows = statement.executeUpdate();
+
+		        if (affectedRows == 0) {
+		            throw new SQLException("Creating user failed, no rows affected.");
+		        }
+
+		        try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+		            if (generatedKeys.next()) {
+		            	ID_insert_INFO = generatedKeys.getLong(1); 
+		            }
+		            else {
+		                throw new SQLException("Creating user failed, no ID obtained.");
+		            }
+		        }
+		    }catch (Exception e) {
+				// TODO: handle exception
+			}
+		 
+		return ID_insert_INFO;
+	}
+	
+	private long insert_new_PACIENTES(
+			Connection conn,
+			Long ID_UTENTE,
+			Long ID_MORADA,
+			Long ID_INFO,
+			String NOME,
+			Integer NCONTRIBUINTE,
+			String DATA_NASC,
+			Integer TELEFONE,
+			String EMAIL,
+			Integer PESO,
+			Integer ALTURA,
+			String PROFISSAO) {
+		
+		
+		return 0;
+	}
+	
+	private int ADD_UTENTE(Connection conn,
+			Long ID_UTENTE,
+			String NOME,
+			String DATA_NASC,
+			Long ID_MORADA,
+			Integer TELEFONE,
+			Integer NCONTRIBUINTE,
+			String EMAIL,
+			Integer PESO,
+			Integer ALTURA,
+			String PROFISSAO,
+			Integer DIABETES,
+			Integer HIPERTENSAO,
+			Integer INSUFICIENCIA,
+			Integer CORONARIA,
+			Integer VALVULA,
+			String ALERGIAS,
+			String INFO,
+			String TERAPEUTICA) {
+		long info_id = 0;
+		long pacientes_id = 0;
+		
+		info_id = insert_new_INFO(getConnection(),ID_UTENTE,DIABETES,
+				  HIPERTENSAO,
+				  INSUFICIENCIA,
+				  CORONARIA,
+				  VALVULA,
+				  ALERGIAS,
+				  INFO,
+				  TERAPEUTICA);
+		
+		if(info_id > 0) {
+			pacientes_id = insert_new_PACIENTES(getConnection(), ID_UTENTE, ID_MORADA, info_id, NOME, NCONTRIBUINTE, DATA_NASC, TELEFONE, EMAIL, PESO, ALTURA, PROFISSAO);
+		}
+		
+		return 0;
+	}
+	
 	private Response getClientDetails(HttpServletRequest req, Integer idClient) {
 
 		JSONObject clients = new JSONObject();
