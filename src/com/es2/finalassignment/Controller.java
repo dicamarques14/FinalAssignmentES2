@@ -93,17 +93,21 @@ public class Controller {
         //System.out.println(ADD_MEDICO("NOME","NOME_CLINICO","email@tu.com",999999999,"PASSWORD","1996/12/19",19121996,"IPV_MEDECINA","ES2",3));
         
         
-        
-        long result = validateLogin(jsobj.getString("username"), jsobj.getString("password"));
-        //o resultaod da funçao valida é 0 sempre que da erro caso contrario devolve o id do utilizador que logou
-        if (result!=0){
-            JSONObject jj = new JSONObject();
-            jj.put("success", true);
-            jj.put("token", createToken(new JSONObject().put("username", req.getHeader("username")).toString() ) );
-            return Response.status(200).entity(jj.toString()).build(); 
-        }else { 
-            error_msg="Invalid Login"; 
-          } 
+        if(isOk) { 
+        	   DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");  
+        	   LocalDateTime now = LocalDateTime.now();  
+        	   
+	        long result = VALIDAR_LOGIN(jsobj.getString("username"), jsobj.getString("password"),dtf.format(now),"DeviceXPTO");
+	        //o resultaod da funçao valida é 0 sempre que da erro caso contrario devolve o id do utilizador que logou
+	        if (result!=0){
+	            JSONObject jj = new JSONObject();
+	            jj.put("success", true);
+	            jj.put("token", createToken(new JSONObject().put("username", req.getHeader("username")).toString() ) );
+	            return Response.status(200).entity(jj.toString()).build(); 
+	        }else { 
+	            error_msg="Invalid Login"; 
+	          } 
+        }
          
         JSONObject jj = new JSONObject(); 
         jj.put("success", false); 
@@ -132,7 +136,28 @@ public class Controller {
           if(jsobj.has("token")) { 
             if( validateToken(jsobj.getString("token"))!= null ) { 
               //check the rest of the fields and exec addutente! 
-                isOk=true;   
+            	if(jsobj.has("ID_UTENTE") && 
+                jsobj.has("NOME") &&
+                jsobj.has("DATA_NASC") &&
+                jsobj.has("ID_MORADA") && 
+                jsobj.has("TELEFONE") &&
+                jsobj.has("NCONTRIBUINTE") && 
+                jsobj.has("EMAIL") &&
+                jsobj.has("PESO") &&
+                jsobj.has("ALTURA") &&
+                jsobj.has("PROFISSAO") &&
+                jsobj.has("DIABETES") && 
+                jsobj.has("HIPERTENSAO") && 
+                jsobj.has("INSUFICIENCIA") && 
+                jsobj.has("CORONARIA") && 
+                jsobj.has("VALVULA") && 
+                jsobj.has("ALERGIAS") &&
+                jsobj.has("INFO") &&
+                jsobj.has("TERAPEUTICA")) {
+            		isOk=true;   
+            	}else{
+            		error_msg="Invalid JSON";
+            	}
             } 
           }else { 
             error_msg="Invalid JSON"; 
@@ -147,36 +172,33 @@ public class Controller {
         e.printStackTrace(); 
       } 
        
-      if(isOk) { 
-         
-        int result = 1; 
-        /* 
+      if(isOk) {  
         int result = ADD_UTENTE( 
-        Long ID_UTENTE, 
-        String NOME, 
-        String DATA_NASC, 
-        Long ID_MORADA, 
-        Integer TELEFONE, 
-        Integer NCONTRIBUINTE, 
-        String EMAIL, 
-        Integer PESO, 
-        Integer ALTURA, 
-        String PROFISSAO, 
-        Integer DIABETES, 
-        Integer HIPERTENSAO, 
-        Integer INSUFICIENCIA, 
-        Integer CORONARIA, 
-        Integer VALVULA, 
-        String ALERGIAS, 
-        String INFO, 
-        String TERAPEUTICA) ;*/ 
+        jsobj.getLong("ID_UTENTE"), 
+        jsobj.getString("NOME"), 
+        jsobj.getString("DATA_NASC"), 
+        jsobj.getLong("ID_MORADA"), 
+        jsobj.getInt("TELEFONE"), 
+        jsobj.getInt("NCONTRIBUINTE"), 
+        jsobj.getString("EMAIL"), 
+        jsobj.getInt("PESO"), 
+        jsobj.getInt("ALTURA"), 
+        jsobj.getString("PROFISSAO"), 
+        jsobj.getInt("DIABETES"), 
+        jsobj.getInt("HIPERTENSAO"), 
+        jsobj.getInt("INSUFICIENCIA"), 
+        jsobj.getInt("CORONARIA"), 
+        jsobj.getInt("VALVULA"), 
+        jsobj.getString("ALERGIAS"), 
+        jsobj.getString("INFO"),
+        jsobj.getString("TERAPEUTICA")); 
          
         if (result==1){ 
           JSONObject jj = new JSONObject(); 
           jj.put("success", true); 
           return Response.status(200).entity(jj.toString()).build();   
         }else { 
-          error_msg="Invalid Login"; 
+          error_msg="Invalid Insert"; 
         } 
       } 
        
@@ -691,7 +713,7 @@ public class Controller {
     		String ACTION,
     		String DEVICE_ID) {
     	Connection conn = getConnection(); 
-    	String SQL_INSERT = "Insert into LOGS_BEEP(ID_UTILIZADOR,DATA_HORA,ACTION,DEVICE_ID,IP_CLIENT) VALUES (?,?,?,?,?)";
+    	String SQL_INSERT = "Insert into LOGS_BEEP(ID_UTILIZADOR,DATA_HORA,ACTION,DEVICE_ID,IP_CLIENTE) VALUES (?,?,?,?,?)";
          try {
                  PreparedStatement statement = conn.prepareStatement(SQL_INSERT,Statement.RETURN_GENERATED_KEYS);
                  statement.setLong(1, ID_UTILIZADOR);

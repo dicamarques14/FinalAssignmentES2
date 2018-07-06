@@ -50,6 +50,47 @@ class FinalAssignmentWebService {
 	void tearDown() throws Exception {
 	}
 
+	String doLogin() throws IOException {
+		URL url  = new URL("http://127.0.0.1:8080/app/auth");
+		HttpURLConnection con = (HttpURLConnection) url.openConnection();
+		con.setDoOutput(true);
+		con.setRequestMethod("POST");
+		
+		con.setRequestProperty("Accept", "application/json");
+		JSONObject jsobj = new JSONObject();
+		jsobj.put("username", "admin");
+		jsobj.put("password", "5392005052f29208f29bf7b721a72515");
+		
+		OutputStream os = con.getOutputStream();
+		OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+		osw.write(jsobj.toString());
+		osw.flush();
+		osw.close();
+		os.close();  //don't forget to close the OutputStream
+		con.connect();
+		if(200 == con.getResponseCode()) {
+			BufferedReader in = new BufferedReader(
+					  new InputStreamReader(con.getInputStream()));
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f);
+
+				con.disconnect();
+				return a.getString("token");
+			}
+		}
+		
+		con.disconnect();
+		return null;
+	}
+	
 	@Test
 	void testLoginSuccess() throws IOException {
 		URL url  = new URL("http://127.0.0.1:8080/app/auth");
@@ -154,7 +195,8 @@ class FinalAssignmentWebService {
 		assertEquals(401, con.getResponseCode());
 	}
 
-	String doLogin() throws IOException {
+	@Test
+	void testLoginMissingField() throws IOException {
 		URL url  = new URL("http://127.0.0.1:8080/app/auth");
 		HttpURLConnection con = (HttpURLConnection) url.openConnection();
 		con.setDoOutput(true);
@@ -162,8 +204,7 @@ class FinalAssignmentWebService {
 		
 		con.setRequestProperty("Accept", "application/json");
 		JSONObject jsobj = new JSONObject();
-		jsobj.put("username", "admin");
-		jsobj.put("password", "5392005052f29208f29bf7b721a72515");
+		jsobj.put("username", "admin"); 
 		
 		OutputStream os = con.getOutputStream();
 		OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
@@ -172,9 +213,9 @@ class FinalAssignmentWebService {
 		osw.close();
 		os.close();  //don't forget to close the OutputStream
 		con.connect();
-		if(200 == con.getResponseCode()) {
+		if(401 == con.getResponseCode()) {
 			BufferedReader in = new BufferedReader(
-					  new InputStreamReader(con.getInputStream()));
+					  new InputStreamReader(con.getErrorStream()));
 			String inputLine;
 			StringBuffer content = new StringBuffer();
 			while ((inputLine = in.readLine()) != null) {
@@ -185,16 +226,50 @@ class FinalAssignmentWebService {
 			if(con.getHeaderField("Content-Type").equals("application/json")) {
 				String f = new String(content);
 				JSONObject a = new JSONObject(f);
+				assertFalse(a.getBoolean("success"));
 
-				con.disconnect();
-				return a.getString("token");
 			}
 		}
-		
 		con.disconnect();
-		return null;
+		assertEquals(401, con.getResponseCode());
 	}
 	
+	@Test
+	void testLoginMissingJson() throws IOException {
+		URL url  = new URL("http://127.0.0.1:8080/app/auth");
+		HttpURLConnection con = (HttpURLConnection) url.openConnection();
+		con.setDoOutput(true);
+		con.setRequestMethod("POST");
+		
+		con.setRequestProperty("Accept", "application/json"); 
+		
+		OutputStream os = con.getOutputStream();
+		OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+		osw.write("trash");
+		osw.flush();
+		osw.close();
+		os.close();  //don't forget to close the OutputStream
+		con.connect();
+		if(401 == con.getResponseCode()) {
+			BufferedReader in = new BufferedReader(
+					  new InputStreamReader(con.getErrorStream()));
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f);
+				assertFalse(a.getBoolean("success"));
+
+			}
+		}
+		con.disconnect();
+		assertEquals(401, con.getResponseCode());
+	}
 	@Test
 	void testADD_UTENTE_SUCCESSFUL() throws IOException {
 		
