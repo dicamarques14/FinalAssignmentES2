@@ -133,9 +133,9 @@ class FinalAssignmentWebService {
 		osw.close();
 		os.close();  //don't forget to close the OutputStream
 		con.connect();
-		if(200 == con.getResponseCode()) {
+		if(401 == con.getResponseCode()) {
 			BufferedReader in = new BufferedReader(
-					  new InputStreamReader(con.getInputStream()));
+					  new InputStreamReader(con.getErrorStream()));
 			String inputLine;
 			StringBuffer content = new StringBuffer();
 			while ((inputLine = in.readLine()) != null) {
@@ -146,8 +146,8 @@ class FinalAssignmentWebService {
 			if(con.getHeaderField("Content-Type").equals("application/json")) {
 				String f = new String(content);
 				JSONObject a = new JSONObject(f);
-				
-				System.out.println(a.getString("token"));
+				assertFalse(a.getBoolean("success"));
+
 			}
 		}
 		con.disconnect();
@@ -345,6 +345,7 @@ class FinalAssignmentWebService {
 		assertEquals(401, status);
 	}
 	
+	/*
 	@Test
 	void testContentType() throws IOException {
 		URL url  = new URL("http://127.0.0.1:8080/app/client/1");
@@ -356,6 +357,6 @@ class FinalAssignmentWebService {
 		con.disconnect();
 		assertEquals("application/json", con.getHeaderField("Content-Type"));
 			
-	}
+	}*/
 
 }
