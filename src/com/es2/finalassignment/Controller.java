@@ -31,13 +31,15 @@ import org.jose4j.jwe.KeyManagementAlgorithmIdentifiers;
 import org.jose4j.keys.AesKey;
 import org.jose4j.lang.ByteUtil;
 import org.jose4j.lang.JoseException;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 @Path("/app")
 public class Controller {
 	
 
-	AesKey key = new AesKey("73AD5182EDA7FAA8".getBytes());
+	static AesKey key = new AesKey("73AD5182EDA7FAA8".getBytes());
 	/** The name of the MySQL account to use (or empty for anonymous) */
 	private final String userName = "ei2_201718";
 
@@ -54,18 +56,30 @@ public class Controller {
 	/** The name of the database we are testing with (this default is installed with MySQL) */
 	private final String dbName = "ei2_201718";
 
-	@Context HttpServletRequest req; 
+	@Context HttpServletRequest req;  
 	
 	@POST
 	@Path("/auth")
 	@Produces("application/json")
-	public Response clientLogin() {
+	public Response clientLogin() { 
 		JSONObject jsobj = null;
+		Boolean isOk=false;
+		String error_msg = "";
 		try {
-			System.out.println(req.getInputStream());
-			BufferedReader kk = new BufferedReader(new InputStreamReader(req.getInputStream()));
 			
-			jsobj = new JSONObject(kk.lines().collect(Collectors.joining()));
+			BufferedReader kk = new BufferedReader(new InputStreamReader(req.getInputStream()));
+			String jsonEmString = kk.lines().collect(Collectors.joining());
+			if(isJSONValid(jsonEmString)) {
+				
+				jsobj = new JSONObject(jsonEmString);
+				if(jsobj.has("username") && jsobj.has("password")) {
+					isOk=true;	
+				}else {
+					error_msg="Invalid JSON";
+				}
+			}else {
+				error_msg="Missing JSON";
+			}
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -73,30 +87,142 @@ public class Controller {
 		}
 		
 		
-		System.out.println(insertmebitch(getConnection(),1,1,1,2,3,6,"s","a","a"));
-		
-		int result = execSQLLogin(getConnection(), jsobj.getString("username"), jsobj.getString("password"));
-		if (result==1){
-			JSONObject jj = new JSONObject();
-			jj.put("success", true);
-			jj.put("token", createToken(new JSONObject().put("username", req.getHeader("username")).toString() ) );
-			return Response.status(200).entity(jj.toString()).build();	
-		}else {
-			JSONObject jj = new JSONObject();
-			jj.put("success", false);
-			return Response.status(401).entity(jj.toString()).build();
+		//System.out.println(insertmebitch(getConnection(),1,1,1,2,3,6,"s","a","a"));
+		if(isOk) {
+			int result = execSQLLogin(jsobj.getString("username"), jsobj.getString("password"));
+			if (result==1){
+				JSONObject jj = new JSONObject();
+				jj.put("success", true);
+				jj.put("token", createToken(new JSONObject().put("username", req.getHeader("username")).toString() ) );
+				return Response.status(200).entity(jj.toString()).build();	
+			}else {
+				error_msg="Invalid Login";
+			}
 		}
 		
+		JSONObject jj = new JSONObject();
+		jj.put("success", false);
+		jj.put("error_msg", error_msg);
+		return Response.status(401).entity(jj.toString()).build();
+		
 	}
+	
+	@POST
+	@Path("/addutente")
+	@Produces("application/json")
+	public Response addUtenteResponse() {
+		JSONObject jsobj = null;
+		Boolean isOk=false;
+		String error_msg = "";
+		try {
+			
+			BufferedReader kk = new BufferedReader(new InputStreamReader(req.getInputStream()));
+			String jsonEmString = kk.lines().collect(Collectors.joining());
+			
+			//verifica se é json!
+			if(isJSONValid(jsonEmString)) {
+				
+				jsobj = new JSONObject(jsonEmString);
+				//verifica se tem os campos!
+				if(jsobj.has("token")) {
+					if( validateToken(jsobj.getString("token"))!= null ) {
+						//check the rest of the fields and exec addutente!
 
+						isOk=true;	
+					}
+				}else {
+					error_msg="Invalid JSON";
+				}
+				
+			}else {
+				error_msg="Missing JSON";
+			}
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		if(isOk) {
+			
+			int result = 1;
+			/*
+			int result = ADD_UTENTE(
+			Long ID_UTENTE,
+			String NOME,
+			String DATA_NASC,
+			Long ID_MORADA,
+			Integer TELEFONE,
+			Integer NCONTRIBUINTE,
+			String EMAIL,
+			Integer PESO,
+			Integer ALTURA,
+			String PROFISSAO,
+			Integer DIABETES,
+			Integer HIPERTENSAO,
+			Integer INSUFICIENCIA,
+			Integer CORONARIA,
+			Integer VALVULA,
+			String ALERGIAS,
+			String INFO,
+			String TERAPEUTICA) ;*/
+			
+			if (result==1){
+				JSONObject jj = new JSONObject();
+				jj.put("success", true);
+				return Response.status(200).entity(jj.toString()).build();	
+			}else {
+				error_msg="Invalid Login";
+			}
+		}
+		
+		JSONObject jj = new JSONObject();
+		jj.put("success", false);
+		jj.put("error_msg", error_msg);
+		return Response.status(401).entity(jj.toString()).build();
+	}
+	
+	private int Verificarnutente(Long ID_UTENTE) {
+        Connection conn = getConnection();
+        String SQL_SELECT = "Select ID_UTENTE FROM PACIENTES_BEEP WHERE ID_UTENTE= ?";
+        try {
+                PreparedStatement statement = conn.prepareStatement(SQL_SELECT);
+                statement.setLong(1, ID_UTENTE);
+                   
+                statement.executeQuery();
+                ResultSet rs = statement.getResultSet();
+ 
+                if (rs.next())
+                {
+                    Long ID_utente = rs.getLong("ID_UTENTE");
+                    if (ID_utente == ID_UTENTE) {
+                        return 0;
+                    }
+                    else {
+                        return 1;
+                    }
+                }
+                else
+                {
+                        return 1;
+                }
+               
+        }catch (Exception e) {
+            System.out.println("Exception : " +e.getMessage());
+            return 1;
+           
+        }
+    }
+	
+	
 	@GET
 	@Path("/client/{idclient}")
 	@Produces("application/json")
     public Response clientDetails(@PathParam("idclient") Integer idClient) {
-		//return Response.status(200).entity("ok 🍬").build();
+		//return Response.status(200).entity("ok").build();
 		
-		System.out.println(req.getRemoteAddr()); 
-		System.out.println(req.getLocalAddr()); 
+		//System.out.println(req.getRemoteAddr()); 
+		//System.out.println(req.getLocalAddr()); 
 		
 		String keyzinho = req.getHeader("Authorization");
 		if(keyzinho==null || validateToken(keyzinho.split(" ")[1])==null)
@@ -114,15 +240,28 @@ public class Controller {
 		 String serializedJwe = null;
 		try {
 			serializedJwe = jwe.getCompactSerialization();
-		} catch (JoseException e) {
-			// TODO Auto-generated catch block
+		} catch (JoseException e) { 
 			e.printStackTrace();
 		}
-		 System.out.println("Serialized Encrypted JWE: " + serializedJwe);
+		 //System.out.println("Serialized Encrypted JWE: " + serializedJwe);
 		 return serializedJwe;
 	}
 	
-	private String validateToken(String token) {
+	private boolean isJSONValid(String test) {
+	    try {
+	        new JSONObject(test);
+	    } catch (JSONException ex) {
+	        try {
+	            new JSONArray(test);
+	        } catch (JSONException ex1) {
+	            System.out.println("[E]Invalid json!");
+	        	return false;
+	        }
+	    }
+	    return true;
+	}
+	
+	public static String validateToken(String token) {
 		 JsonWebEncryption jwe = new JsonWebEncryption();
 		 jwe = new JsonWebEncryption();
 		 jwe.setAlgorithmConstraints(new AlgorithmConstraints(ConstraintType.WHITELIST, 
@@ -134,12 +273,10 @@ public class Controller {
 			jwe.setCompactSerialization(token);
 			System.out.println("Payload: " + jwe.getPayload());
 			return jwe.getPayload();
-		} catch (JoseException e) {
-			// TODO Auto-generated catch block
-			//e.printStackTrace();
+		 } catch (JoseException e) {  
 			System.out.println("Invalid Token");
 			return null;
-		}
+		 }
 		 
 	}
 	//Connection to DB
@@ -162,7 +299,8 @@ public class Controller {
 		return conn;
 	}	
 
-	private int execSQLLogin(Connection conn,String username,String password) {
+	private int execSQLLogin(String username,String password) {
+		Connection conn = getConnection();
 		Statement s = null;
 		ResultSet rs = null;
 		try {
@@ -191,9 +329,9 @@ public class Controller {
 		}
 		return 0;
 	}
-	
+	 
 	//retorna o id do info inserido, else 0
-	private long insert_new_INFO(Connection conn,
+	private long insert_new_INFO(
 			Long ID_UTENTE,
 			Integer DIABETES,
 			Integer HIPERTENSAO,
@@ -203,7 +341,9 @@ public class Controller {
 			String ALERGIAS,
 			String INFO,
 			String TERAPEUTICA
-			) {
+			) 
+	{
+		Connection conn = getConnection();
 		String SQL_INSERT = "Insert into INFO_BEEP(ID_UTENTE,DIABETES,HIPERTENSAO,INSUFICIENCIA,CORONARIA,VALVULA,ALERGIAS,INFO,TERAPEUTICA) VALUES (?,?,?,?,?,?,?,?,?)";
 		Long ID_insert_INFO = (long) 0;
 		try { 
@@ -240,7 +380,6 @@ public class Controller {
 	}
 	
 	private long insert_new_PACIENTES(
-			Connection conn,
 			Long ID_UTENTE,
 			Long ID_MORADA,
 			Long ID_INFO,
@@ -251,13 +390,14 @@ public class Controller {
 			String EMAIL,
 			Integer PESO,
 			Integer ALTURA,
-			String PROFISSAO) {
-		
+			String PROFISSAO)
+	 {
+			Connection conn = getConnection();
 		
 		return 0;
 	}
 	
-	private int ADD_UTENTE(Connection conn,
+	private int ADD_UTENTE(
 			Long ID_UTENTE,
 			String NOME,
 			String DATA_NASC,
@@ -279,7 +419,7 @@ public class Controller {
 		long info_id = 0;
 		long pacientes_id = 0;
 		
-		info_id = insert_new_INFO(getConnection(),ID_UTENTE,DIABETES,
+		info_id = insert_new_INFO(ID_UTENTE,DIABETES,
 				  HIPERTENSAO,
 				  INSUFICIENCIA,
 				  CORONARIA,
@@ -289,7 +429,7 @@ public class Controller {
 				  TERAPEUTICA);
 		
 		if(info_id > 0) {
-			pacientes_id = insert_new_PACIENTES(getConnection(), ID_UTENTE, ID_MORADA, info_id, NOME, NCONTRIBUINTE, DATA_NASC, TELEFONE, EMAIL, PESO, ALTURA, PROFISSAO);
+			pacientes_id = insert_new_PACIENTES(ID_UTENTE, ID_MORADA, info_id, NOME, NCONTRIBUINTE, DATA_NASC, TELEFONE, EMAIL, PESO, ALTURA, PROFISSAO);
 		}
 		
 		return 0;
@@ -304,18 +444,18 @@ public class Controller {
 			case 1 : 
 				
 				clients.put("id", idClient);
-				clients.put("name", "José das Couves");
+				clients.put("name", "JosÃ© das Couves");
 				clients.put("address", "Viseu");
 				clients.put("ssn", "211888999");
 				clients.put("job", "ajudante");
 				break;
 			case 2 : 
 				clients.put("id", idClient);
-				clients.put("name", "Maria da Sé");
+				clients.put("name", "Maria da SÃ©");
 				clients.put("address", "Porto");
 				break;
 			case 3 : 
-				String s = "<data><id>3</id><name>João dos Coices</name><address>Alentejo</address></data>";
+				String s = "<data><id>3</id><name>JoÃ£o dos Coices</name><address>Alentejo</address></data>";
 				return Response.status(200).entity(s).build();
 			default:
 				return Response.status(404).entity("Not found").build();
