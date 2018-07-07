@@ -146,7 +146,7 @@ class FinalAssignmentWebService {
     }
 	
 	@Test
-	void testLoginSuccess() throws IOException {
+	void testLoginSuccessANDTestToken() throws IOException {
 		URL url  = new URL("http://127.0.0.1:8080/app/auth");
 		HttpURLConnection con = (HttpURLConnection) url.openConnection();
 		con.setDoOutput(true);
@@ -250,7 +250,7 @@ class FinalAssignmentWebService {
 	}
 
 	@Test
-	void testLoginMissingField() throws IOException {
+	void testLoginMissingPW() throws IOException {
 		URL url  = new URL("http://127.0.0.1:8080/app/auth");
 		HttpURLConnection con = (HttpURLConnection) url.openConnection();
 		con.setDoOutput(true);
@@ -259,6 +259,44 @@ class FinalAssignmentWebService {
 		con.setRequestProperty("Accept", "application/json");
 		JSONObject jsobj = new JSONObject();
 		jsobj.put("username", "admin"); 
+		
+		OutputStream os = con.getOutputStream();
+		OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+		osw.write(jsobj.toString());
+		osw.flush();
+		osw.close();
+		os.close();  //don't forget to close the OutputStream
+		con.connect();
+		if(401 == con.getResponseCode()) {
+			BufferedReader in = new BufferedReader(
+					  new InputStreamReader(con.getErrorStream()));
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f);
+				assertFalse(a.getBoolean("success"));
+
+			}
+		}
+		con.disconnect();
+		assertEquals(401, con.getResponseCode());
+	}
+	@Test
+	void testLoginMissingUsernane() throws IOException {
+		URL url  = new URL("http://127.0.0.1:8080/app/auth");
+		HttpURLConnection con = (HttpURLConnection) url.openConnection();
+		con.setDoOutput(true);
+		con.setRequestMethod("POST");
+		
+		con.setRequestProperty("Accept", "application/json");
+		JSONObject jsobj = new JSONObject();
+		jsobj.put("password", "admin"); 
 		
 		OutputStream os = con.getOutputStream();
 		OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    

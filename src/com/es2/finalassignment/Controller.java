@@ -543,9 +543,7 @@ public class Controller {
          System.out.println("Devolvi "+ID_insert_of_insert);
          return ID_insert_of_insert;
     }
-    
-    
-    
+        
     private long insert_new_MEDICOS(
     		Long ID_UTILIZADOR,
     		String NOME_CLINICO,
