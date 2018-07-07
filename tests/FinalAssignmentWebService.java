@@ -9,6 +9,12 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Properties;
 
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
@@ -21,6 +27,23 @@ import com.es2.finalassignment.Application;
 import com.es2.finalassignment.Controller;
 
 class FinalAssignmentWebService {
+	
+    /** The name of the MySQL account to use (or empty for anonymous) */
+    private final String userName = "ei2_201718";
+ 
+    /** The password for the MySQL account (or empty for anonymous) */
+    private final String password = "password";
+ 
+    /** The name of the computer running MySQL */
+    private final String serverName = "193.137.7.39";
+    //private final String serverName = "10.0.3.201";
+ 
+    /** The port of the MySQL server (default is 3306) */
+    private final int portNumber = 3306;
+ 
+    /** The name of the database we are testing with (this default is installed with MySQL) */
+    private final String dbName = "ei2_201718";
+	
 	private static Thread t;
 	@BeforeAll
 	static void setUpBeforeClass() throws Exception {
@@ -90,6 +113,37 @@ class FinalAssignmentWebService {
 		con.disconnect();
 		return null;
 	}
+	
+	private void delete_ID_UTENTE(Long ID_UTENTE) {
+		 Connection conn = null;
+	        Properties connectionProps = new Properties();
+	        connectionProps.put("user", this.userName);
+	        connectionProps.put("password", this.password);
+	 
+	       
+	        try {
+	            conn = DriverManager.getConnection("jdbc:mysql://"
+	                    + this.serverName + ":" + this.portNumber + "/" + this.dbName,
+	                    connectionProps);
+	        } catch (SQLException e) {
+	            // TODO Auto-generated catch block
+	            e.printStackTrace();
+	        } 
+    	String SQL_DELETE = "DELETE FROM PACIENTES_BEEP WHERE ID_UTENTE = ?";
+         try {
+                 PreparedStatement statement = conn.prepareStatement(SQL_DELETE,Statement.RETURN_GENERATED_KEYS);
+                 statement.setLong(1, ID_UTENTE); 
+                
+                 int affectedRows = statement.executeUpdate();
+  
+                 if (affectedRows == 0) {
+                     throw new SQLException("DELETING user failed, no rows affected.");
+                 }
+  
+             }catch (Exception e) {
+            	 System.out.println("Exception : " +e.getMessage());
+             } 
+    }
 	
 	@Test
 	void testLoginSuccess() throws IOException {
@@ -272,6 +326,890 @@ class FinalAssignmentWebService {
 	}
 	@Test
 	void testADD_UTENTE_SUCCESSFUL() throws IOException {
+		delete_ID_UTENTE(6000L);
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			jsobj.put("ID_UTENTE", "6000"); //6000
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(200, status);
+	}
+	
+	@Test
+	void testADD_UTENTE_miss_idutente() throws IOException {
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			//jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+	
+	@Test
+	void testADD_UTENTE_miss_NOME() throws IOException {
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			jsobj.put("ID_UTENTE", "1");
+			//jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+	
+	@Test
+	void testADD_UTENTE_miss_DATA_NASC() throws IOException {
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			//jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+	
+	@Test
+	void testADD_UTENTE_miss_ID_MORADA() throws IOException {
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			//jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+	
+	@Test
+	void testADD_UTENTE_miss_TELEFONE() throws IOException {
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			//jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+	
+	@Test
+	void testADD_UTENTE_miss_NCONTRIBUINTE() throws IOException {
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			//jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+	
+	@Test
+	void testADD_UTENTE_miss_EMAIL() throws IOException {
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			//jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+
+	@Test
+	void testADD_UTENTE_miss_PESO() throws IOException {
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			//jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+
+	@Test
+	void testADD_UTENTE_miss_ALTURA() throws IOException {
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			//jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+	
+	@Test
+	void testADD_UTENTE_miss_PROFISSAO() throws IOException {
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			//jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+	
+	@Test
+	void testADD_UTENTE_miss_DIABETES() throws IOException {
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			//jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+	
+	@Test
+	void testADD_UTENTE_miss_HIPERTENSAO() throws IOException {
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			//jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+
+	@Test
+	void testADD_UTENTE_miss_INSUFICIENCIA() throws IOException {
 		
 		String token = doLogin();
 		int status = 0;
@@ -297,13 +1235,13 @@ class FinalAssignmentWebService {
 			jsobj.put("PROFISSAO", "coises");
 			jsobj.put("DIABETES", "1");
 			jsobj.put("HIPERTENSAO", "1");
-			jsobj.put("INSUFICIENCIA", "1");
+			//jsobj.put("INSUFICIENCIA", "1");
 			jsobj.put("CORONARIA", "1");
 			jsobj.put("VALVULA", "1");
 			jsobj.put("ALERGIAS", "a ES2");
 			jsobj.put("INFO", "Info");
 			jsobj.put("TERAPEUTICA", "Terapia");
-			
+			System.out.println(jsobj.toString());
 			OutputStream os = con.getOutputStream();
 			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
 			osw.write(jsobj.toString());//JSON A ENVIAR
@@ -315,8 +1253,12 @@ class FinalAssignmentWebService {
 			System.out.println("aa"+status);
 			
 			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
-			
-			BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
 			String inputLine;
 			StringBuffer content = new StringBuffer();
 			while ((inputLine = in.readLine()) != null) {
@@ -331,7 +1273,76 @@ class FinalAssignmentWebService {
 			}
 			con.disconnect();
 		}
-		assertEquals(200, status);
+		assertEquals(401, status);
+	}
+
+	
+	@Test
+	void testADD_UTENTE_noToken() throws IOException {
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", "ss2");
+			jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			System.out.println(jsobj.toString());
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode();
+			System.out.println("aa"+status);
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				System.out.println(a.toString());
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
 	}
 	
 	@Test

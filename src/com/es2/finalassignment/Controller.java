@@ -331,6 +331,7 @@ public class Controller {
         return ID_insert_INFO;
     }
    
+    //RETURN 0 SE OK
     private long insert_new_PACIENTES(
             Long ID_UTENTE,
             Long ID_MORADA,
@@ -345,7 +346,7 @@ public class Controller {
             String PROFISSAO) {
     	 	Connection conn = getConnection();
 	        String SQL_INSERT = "Insert into PACIENTES_BEEP(ID_UTENTE,ID_MORADA,ID_INFO,NOME,NCONTRIBUINTE,DATA_NASC,TELEFONE,EMAIL,PESO,ALTURA,PROFISSAO) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
-	        Long ID_insert_INFO = (long) 0;
+
 	        try {
 	                PreparedStatement statement = conn.prepareStatement(SQL_INSERT,Statement.RETURN_GENERATED_KEYS);
 	                statement.setLong(1, ID_UTENTE);
@@ -365,14 +366,7 @@ public class Controller {
 	                    throw new SQLException("Creating user failed, no rows affected.");
 	                }
 	 
-	                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-	                    if (generatedKeys.next()) {
-	                        ID_insert_INFO = generatedKeys.getLong(1);
-	                    }
-	                    else {
-	                        throw new SQLException("Creating user failed, no ID obtained.");
-	                    }
-	                }
+	               
 	            }catch (Exception e) {
 	            	System.out.println("Exception : " +e.getMessage());
 	            	return 1;
@@ -380,10 +374,10 @@ public class Controller {
 	            }
 	    
     	    System.out.println("Correu tudo bem até aqui! #2parte");
-	        System.out.println("Devolvi "+ID_insert_INFO);
+
 	       
     	   
-       return ID_insert_INFO;
+       return 0;
     }
     
     private int Verificarnutente(Long ID_UTENTE) {
@@ -474,7 +468,7 @@ public class Controller {
         
         Integer test1 = Verificarnutente(ID_UTENTE);
         
-        if (test1 == 0) {
+        if (test1 != 0) {
         	Integer test2 = Verificarnmorada(ID_MORADA);
         	if (test2 == 0) {
         		 info_id = insert_new_INFO(
@@ -489,7 +483,7 @@ public class Controller {
                   TERAPEUTICA);
         		 if(info_id > 0) {
         			 pacientes_id = insert_new_PACIENTES(ID_UTENTE, ID_MORADA, info_id, NOME, NCONTRIBUINTE, DATA_NASC, TELEFONE, EMAIL, PESO, ALTURA, PROFISSAO);
-    			 	 if(pacientes_id == ID_UTENTE ) {
+    			 	 if(pacientes_id == 0 ) {
     			 		 return 1;
     			 	 }else {
     			 		 return 0;
@@ -549,6 +543,8 @@ public class Controller {
          System.out.println("Devolvi "+ID_insert_of_insert);
          return ID_insert_of_insert;
     }
+    
+    
     
     private long insert_new_MEDICOS(
     		Long ID_UTILIZADOR,
@@ -743,14 +739,14 @@ public class Controller {
     		String DEVICE_ID) {
     	long id =validateLogin(LOGIN,PASSWORD);
     	if (id !=0) {
-    		 int info =insert_new_LOG(id,DATA_HORA,"Login", DEVICE_ID);
+    		 int info = insert_new_LOG(id,DATA_HORA,"Login", DEVICE_ID);
     		 if (info == 1) {
     			return 1; 
     		 }else {
     			 return 0;
-    		 }
-    		
+    		 } 
     	}else {
+    		System.out.println("invalid login");
     		return 0;
     	}
     	
