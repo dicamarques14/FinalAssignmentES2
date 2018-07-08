@@ -26,7 +26,8 @@ import java.util.Properties;
 import java.util.stream.Collectors;
  
 import javax.servlet.http.HttpServletRequest;
- 
+import javax.validation.constraints.Null;
+
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwa.AlgorithmConstraints.ConstraintType;
 import org.jose4j.jwe.ContentEncryptionAlgorithmIdentifiers;
@@ -104,7 +105,7 @@ public class Controller {
 	        if (result!=0){
 	            JSONObject jj = new JSONObject();
 	            jj.put("success", true);
-	            jj.put("token", createToken(new JSONObject().put("username", req.getHeader("username")).toString() ) );
+	            jj.put("token", createToken(new JSONObject().put("username", jsobj.getString("username")).toString() ) );
 	            return Response.status(200).entity(jj.toString()).build(); 
 	        }else { 
 	            error_msg="Invalid Login"; 
@@ -205,11 +206,11 @@ public class Controller {
 	          return Response.status(200).entity(jj.toString()).build();   
 		
 		case -1:
-	          error_msg="Invalid DATA_NASC"; 
+			error_msg="Invalid DATA_NASC"; 
 			break;
 		case -2:
-		       error_msg="Invalid Insert to PACIENTES"; 
-			break;
+	       error_msg="Invalid Insert to PACIENTES"; 
+	       break;
 		case -3:
 			error_msg="Invalid Insert to INFO"; 
 			break;
@@ -323,8 +324,7 @@ public class Controller {
         Long ID_insert_INFO = (long) 0;
         try {
                 PreparedStatement statement = conn.prepareStatement(SQL_INSERT,Statement.RETURN_GENERATED_KEYS);
-                statement.setLong(1, ID_UTENTE);
-                System.out.println("DIABETES "+DIABETES);
+                statement.setLong(1, ID_UTENTE); 
                 statement.setInt(2, DIABETES);
                 statement.setInt(3, HIPERTENSAO);
                 statement.setInt(4, INSUFICIENCIA);
@@ -372,6 +372,10 @@ public class Controller {
     	 	Connection conn = getConnection();
 	        String SQL_INSERT = "Insert into PACIENTES_BEEP(ID_UTENTE,ID_MORADA,ID_INFO,NOME,NCONTRIBUINTE,DATA_NASC,TELEFONE,EMAIL,PESO,ALTURA,PROFISSAO) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 
+	        if(NOME.equals("")||NOME == null) {
+	        	return 1;
+	        }
+	        
 	        try {
 	                PreparedStatement statement = conn.prepareStatement(SQL_INSERT,Statement.RETURN_GENERATED_KEYS);
 	                statement.setLong(1, ID_UTENTE);
@@ -417,13 +421,8 @@ public class Controller {
 
                 if (rs.next())
                 {
-                    Long ID_utente = rs.getLong("ID_UTENTE");
-                    if (ID_utente == ID_UTENTE) {
-                        return 0;
-                    }
-                    else {
-                        return 1;
-                    }
+                    Long ID_utente = rs.getLong("ID_UTENTE"); 
+                    return 0; 
                 }
                 else
                 {
@@ -496,9 +495,8 @@ public class Controller {
         try {
 			java.util.Date a = new SimpleDateFormat("yyyy-MM-dd").parse(DATA_NASC);
 			DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MM-yyyy");  
-     	   	LocalDateTime now = LocalDateTime.now();  
-     	   	System.out.println(a.toString());
-     	   	System.out.println(new SimpleDateFormat("dd-MM-yyyy").parse(dtf.format(now)));
+     	   	LocalDateTime now = LocalDateTime.now();   
+     	   	
 			if(a.after(new SimpleDateFormat("dd-MM-yyyy").parse(dtf.format(now)))) {
 				return -1;
 			}
@@ -785,8 +783,7 @@ public class Controller {
     		 }else {
     			 return 0;
     		 } 
-    	}else {
-    		System.out.println("invalid login");
+    	}else { 
     		return 0;
     	}
     	
