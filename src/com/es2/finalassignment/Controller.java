@@ -158,9 +158,12 @@ public class Controller {
             	}else{
             		error_msg="Invalid JSON";
             	}
-            } 
+            }
+            else {
+                error_msg="Invalid Token"; 
+            }
           }else { 
-            error_msg="Invalid JSON"; 
+            error_msg="Missing Token"; 
           } 
            
         }else { 
@@ -236,7 +239,7 @@ public class Controller {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-         System.out.println("Serialized Encrypted JWE: " + serializedJwe);
+         //System.out.println("Serialized Encrypted JWE: " + serializedJwe);
          return serializedJwe;
     }
    
@@ -250,7 +253,7 @@ public class Controller {
          jwe.setKey(key);
          try {
             jwe.setCompactSerialization(token);
-            System.out.println("Payload: " + jwe.getPayload());
+            //System.out.println("Payload: " + jwe.getPayload());
             return jwe.getPayload();
         } catch (JoseException e) {
             // TODO Auto-generated catch block
@@ -668,7 +671,7 @@ public class Controller {
     
     
     //Função de validar login
-    private long validateLogin(String username,String password) {
+    private long queryLogin(String username,String password) {
 
         Connection conn = getConnection();
         String SQL_SELECT = new String("SELECT  ID_UTILIZADOR,EMAIL, PASSWORD FROM UTILIZADORES_BEEP where EMAIL = ?");
@@ -735,7 +738,7 @@ public class Controller {
     		String PASSWORD,
     		String DATA_HORA,
     		String DEVICE_ID) {
-    	long id =validateLogin(LOGIN,PASSWORD);
+    	long id = queryLogin(LOGIN,PASSWORD);
     	if (id !=0) {
     		 int info = insert_new_LOG(id,DATA_HORA,"Login", DEVICE_ID);
     		 if (info == 1) {
