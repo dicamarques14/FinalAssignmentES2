@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.es2.finalassignment.Application;
@@ -1824,8 +1825,8 @@ class FinalAssignmentWebService {
 	
 	
 	@Test
-	void testADD_UTENTE_noToken() throws IOException {
-		System.out.println("testADD_UTENTE_noToken");
+	void testADD_UTENTE_InvalidToken() throws IOException {
+		System.out.println("testADD_UTENTE_InvalidToken");
 		
 		String token = doLogin();
 		int status = 0;
@@ -1885,13 +1886,151 @@ class FinalAssignmentWebService {
 				String f = new String(content);
 				JSONObject a = new JSONObject(f); 
 				  assertFalse(a.getBoolean("success"));
-					System.out.println(a.getString("error_msg"));
+					System.out.println("failToken:"+a.getString("error_msg"));
 			}
 			con.disconnect();
 		}
 		assertEquals(401, status);
 	}
-	
+
+	@Test
+	void testADD_UTENTE_Miss_Token() throws IOException {
+		System.out.println("testADD_UTENTE_Miss_Token");
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			//jsobj.put("token", "ss2");
+			jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "1994-06-11");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			  
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode(); 
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				  assertFalse(a.getBoolean("success"));
+					System.out.println("failToken:"+a.getString("error_msg"));
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+
+	@Test
+	void testADD_UTENTE_Invalid_DATA_NASC() throws IOException {
+		System.out.println("testADD_UTENTE_Invalid_DATA_NASC");
+		
+		String token = doLogin();
+		int status = 0;
+		if(token != null) {
+	 		URL url  = new URL("http://127.0.0.1:8080/app/addutente");
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("POST");
+			
+			con.setRequestProperty("Accept", "application/json");
+			
+			JSONObject jsobj = new JSONObject();
+			jsobj.put("token", token);
+			jsobj.put("ID_UTENTE", "1");
+			jsobj.put("NOME", "Joaquina Das Couves");
+			jsobj.put("DATA_NASC", "2019-05-05");
+			jsobj.put("ID_MORADA", "1");
+			jsobj.put("TELEFONE", "123456789");
+			jsobj.put("NCONTRIBUINTE", "510407404");
+			jsobj.put("EMAIL", "mail@mail.com");
+			jsobj.put("PESO", "100");
+			jsobj.put("ALTURA", "12");
+			jsobj.put("PROFISSAO", "coises");
+			jsobj.put("DIABETES", "1");
+			jsobj.put("HIPERTENSAO", "1");
+			jsobj.put("INSUFICIENCIA", "1");
+			jsobj.put("CORONARIA", "1");
+			jsobj.put("VALVULA", "1");
+			jsobj.put("ALERGIAS", "a ES2");
+			jsobj.put("INFO", "Info");
+			jsobj.put("TERAPEUTICA", "Terapia");
+			  
+			OutputStream os = con.getOutputStream();
+			OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");    
+			osw.write(jsobj.toString());//JSON A ENVIAR
+			osw.flush();
+			osw.close();
+			os.close();  //don't forget to close the OutputStream
+			con.connect(); 
+			status = con.getResponseCode(); 
+			
+			//			con.getErrorStream() EM CASO DE ERRO USA ISTO!
+			BufferedReader in;
+			if(status == 200) {
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			}else {
+				in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+			}
+			String inputLine;
+			StringBuffer content = new StringBuffer();
+			while ((inputLine = in.readLine()) != null) {
+			    content.append(inputLine);
+			}
+			//System.out.println(content);
+			in.close();
+			if(con.getHeaderField("Content-Type").equals("application/json")) {
+				String f = new String(content);
+				JSONObject a = new JSONObject(f); 
+				  assertFalse(a.getBoolean("success"));
+					System.out.println("failToken:"+a.getString("error_msg"));
+			}
+			con.disconnect();
+		}
+		assertEquals(401, status);
+	}
+
 
 	@Test
 	void testADD_UTENTE_fail_Diabetes() throws IOException {
@@ -1919,7 +2058,7 @@ class FinalAssignmentWebService {
 			jsobj.put("PESO", "100");
 			jsobj.put("ALTURA", "12");
 			jsobj.put("PROFISSAO", "coises");
-			jsobj.put("DIABETES", "48964684684864864");
+			jsobj.put("DIABETES", "12");
 			jsobj.put("HIPERTENSAO", "1");
 			jsobj.put("INSUFICIENCIA", "1");
 			jsobj.put("CORONARIA", "1");
@@ -1953,6 +2092,7 @@ class FinalAssignmentWebService {
 				String f = new String(content);
 				JSONObject a = new JSONObject(f); 
 				assertFalse(a.getBoolean("success"));
+				assertTrue(a.has("error_msg"));
 				System.out.println(a.getString("error_msg"));
 			}
 			con.disconnect();

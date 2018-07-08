@@ -18,6 +18,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;  
 import java.time.LocalDateTime;    
 import java.util.Properties;
@@ -195,14 +197,33 @@ public class Controller {
         jsobj.getString("ALERGIAS"), 
         jsobj.getString("INFO"),
         jsobj.getString("TERAPEUTICA")); 
-         
-        if (result==1){ 
-          JSONObject jj = new JSONObject(); 
-          jj.put("success", true); 
-          return Response.status(200).entity(jj.toString()).build();   
-        }else { 
-          error_msg="Invalid Insert"; 
-        } 
+        
+        switch (result) {
+		case 1:
+			JSONObject jj = new JSONObject(); 
+	          jj.put("success", true); 
+	          return Response.status(200).entity(jj.toString()).build();   
+		
+		case -1:
+	          error_msg="Invalid DATA_NASC"; 
+			break;
+		case -2:
+		       error_msg="Invalid Insert to PACIENTES"; 
+			break;
+		case -3:
+			error_msg="Invalid Insert to INFO"; 
+			break;
+		case -4:
+			error_msg="Invalid ID Morada"; 
+			break;
+		case -5:
+			error_msg="Invalid ID UTENTE"; 
+			break; 
+
+		default:
+			error_msg="GenericErrorBOOM"; 
+			break;
+		}
       } 
        
       JSONObject jj = new JSONObject(); 
@@ -303,6 +324,7 @@ public class Controller {
         try {
                 PreparedStatement statement = conn.prepareStatement(SQL_INSERT,Statement.RETURN_GENERATED_KEYS);
                 statement.setLong(1, ID_UTENTE);
+                System.out.println("DIABETES "+DIABETES);
                 statement.setInt(2, DIABETES);
                 statement.setInt(3, HIPERTENSAO);
                 statement.setInt(4, INSUFICIENCIA);
@@ -469,6 +491,23 @@ public class Controller {
         long info_id = 0;
         long pacientes_id = 0;
         
+        
+        //verifica se nao inventa datas de nascimento
+        try {
+			java.util.Date a = new SimpleDateFormat("yyyy-MM-dd").parse(DATA_NASC);
+			DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MM-yyyy");  
+     	   	LocalDateTime now = LocalDateTime.now();  
+     	   	System.out.println(a.toString());
+     	   	System.out.println(new SimpleDateFormat("dd-MM-yyyy").parse(dtf.format(now)));
+			if(a.after(new SimpleDateFormat("dd-MM-yyyy").parse(dtf.format(now)))) {
+				return -1;
+			}
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return -1;
+		}   
+        
         Integer test1 = Verificarnutente(ID_UTENTE);
         
         if (test1 != 0) {
@@ -489,16 +528,16 @@ public class Controller {
     			 	 if(pacientes_id == 0 ) {
     			 		 return 1;
     			 	 }else {
-    			 		 return 0;
+    			 		 return -2;
     			 	 }
         		 }else {
-        			 return 0;
+        			 return -3;
         		 }
         	}else {
-        		return 0;
+        		return -4;
         	}
         }else {
-        	return 0;
+        	return -5;
         }
        
     }
